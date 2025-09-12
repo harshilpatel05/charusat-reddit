@@ -1,103 +1,128 @@
-import Image from "next/image";
+'use client'
+import Navbar from "@/components/Navbar"
+import { useEffect, useState } from "react"
+import { createClient } from "@/utils/supabase/client"
+
+type QA = { question: string; answer?: string }
 
 export default function Home() {
-  return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const [pdfs, setPdfs] = useState<{ key: string; url: string }[]>([])
+  const [selectedPdf, setSelectedPdf] = useState<string | null>(null)
+  const [query, setQuery] = useState("")
+  const [qaList, setQaList] = useState<QA[]>([])
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  useEffect(() => {
+    const supabase = createClient()
+
+    const fetchPdfs = async () => {
+      const { data, error } = await supabase.storage.from("pdf").list("pdf")
+      if (error) return
+
+      if (data) {
+        const files = data
+          .filter((item) => item.name.endsWith(".pdf"))
+          .map((item) => {
+            const key = `pdf/${item.name}`
+            const { publicUrl } = supabase.storage.from("pdf").getPublicUrl(key).data
+            return { key, url: publicUrl }
+          })
+
+        setPdfs(files)
+        if (files.length > 0) setSelectedPdf(files[0].url)
+      }
+    }
+
+    fetchPdfs()
+  }, [])
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!query.trim()) return
+
+    const newEntry: QA = { question: query }
+    setQaList((prev) => [...prev, newEntry])
+    setQuery("")
+  }
+
+  return (
+    <div>
+      <Navbar />
+      <div className="flex px-5 items-center flex-col w-full">
+        <div className="w-full my-8 mx-4 flex flex-col md:flex-row h-auto md:h-[800px] border rounded-lg overflow-hidden">
+          {/* Sidebar with PDF list */}
+          <div className="w-full md:w-1/6 border-b md:border-b-0 md:border-r overflow-y-auto bg-gray-50">
+            <h2 className="text-lg font-bold p-4 border-b">Select PDF</h2>
+            <ul className="space-y-1 p-2">
+              {pdfs.length === 0 && <li className="p-2">No PDFs found.</li>}
+              {pdfs.map((pdf) => (
+                <li key={pdf.url}>
+                  <button
+                    className={`block w-full text-left px-3 py-2 rounded hover:bg-gray-200 ${
+                      selectedPdf === pdf.url
+                        ? "bg-blue-100 font-bold text-blue-700"
+                        : "text-gray-700"
+                    }`}
+                    onClick={() => setSelectedPdf(pdf.url)}
+                  >
+                    {pdf.key.slice(4, pdf.key.length - 4)}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* PDF viewer */}
+          <div className="flex-1 md:flex-[2] border-b md:border-b-0 md:border-r min-h-[400px]">
+            {selectedPdf ? (
+              <iframe
+                src={selectedPdf}
+                width="100%"
+                height="100%"
+                className="border-0 min-h-[400px] md:h-full"
+              />
+            ) : (
+              <div className="flex items-center justify-center h-full text-gray-500">
+                Select a PDF to view
+              </div>
+            )}
+          </div>
+
+          {/* Q&A Panel */}
+          <div className="w-full md:w-1/4 flex flex-col bg-white border-t md:border-t-0 md:border-l">
+            <h2 className="text-lg font-bold p-4 border-b">Q&A on this PDF</h2>
+
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              {qaList.length === 0 && (
+                <p className="text-gray-400 italic">No questions asked yet.</p>
+              )}
+              {qaList.map((qa, i) => (
+                <div key={i} className="border rounded p-3 bg-gray-50">
+                  <p className="font-semibold text-gray-800">Q: {qa.question}</p>
+                  <p className="mt-2 text-gray-700">
+                    A: {qa.answer ? qa.answer : "This query has not been answered yet."}
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            <form onSubmit={handleSubmit} className="p-4 border-t flex gap-2">
+              <input
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Ask a question about this PDF..."
+                className="flex-1 border rounded px-3 py-2 text-sm focus:outline-none focus:ring focus:ring-blue-200"
+              />
+              <button
+                type="submit"
+                className="bg-blue-100 text-blue-600 px-5 py-2 rounded-full hover:bg-blue-200 transition"
+              >
+                Submit
+              </button>
+            </form>
+          </div>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+      </div>
     </div>
-  );
+  )
 }
