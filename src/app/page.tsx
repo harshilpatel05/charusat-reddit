@@ -57,11 +57,10 @@ export default function Home() {
               {pdfs.map((pdf) => (
                 <li key={pdf.url}>
                   <button
-                    className={`block w-full text-left px-3 py-2 rounded hover:bg-gray-200 ${
-                      selectedPdf === pdf.url
+                    className={`block w-full text-left px-3 py-2 rounded hover:bg-gray-200 ${selectedPdf === pdf.url
                         ? "bg-blue-100 font-bold text-blue-700"
                         : "text-gray-700"
-                    }`}
+                      }`}
                     onClick={() => setSelectedPdf(pdf.url)}
                   >
                     {pdf.key.slice(4, pdf.key.length - 4)}
@@ -74,12 +73,19 @@ export default function Home() {
           {/* PDF viewer */}
           <div className="flex-1 md:flex-[2] border-b md:border-b-0 md:border-r min-h-[400px]">
             {selectedPdf ? (
+              // <iframe
+              //   src={selectedPdf}
+              //   width="100%"
+              //   height="100%"
+              //   className="border-0 min-h-[400px] md:h-full"
+              // />
               <iframe
-                src={selectedPdf}
+                src={`https://docs.google.com/viewer?url=${encodeURIComponent(selectedPdf)}&embedded=true`}
                 width="100%"
-                height="100%"
-                className="border-0 min-h-[400px] md:h-full"
+                height="800px"
+                className="border-0"
               />
+
             ) : (
               <div className="flex items-center justify-center h-full text-gray-500">
                 Select a PDF to view
