@@ -8,6 +8,8 @@ type QA = { question: string; answer?: string }
 export default function Home() {
   const [pdfs, setPdfs] = useState<{ key: string; url: string }[]>([])
   const [selectedPdf, setSelectedPdf] = useState<string | null>(null)
+  const [selectedKey, setSelectedKey] = useState<string | null>(null) // track highlighted file
+  const [loadingPdf, setLoadingPdf] = useState(false)
   const [query, setQuery] = useState("")
   const [qaList, setQaList] = useState<QA[]>([])
 
@@ -23,12 +25,11 @@ export default function Home() {
           .filter((item) => item.name.endsWith(".pdf"))
           .map((item) => {
             const key = `pdf/${item.name}`
-            const { publicUrl } = supabase.storage.from("pdf").getPublicUrl(key).data
-            return { key, url: publicUrl }
+            const apiUrl = `/api/pdf/${encodeURIComponent("pdf")}/${encodeURIComponent(item.name)}`
+            return { key, url: apiUrl }
           })
 
         setPdfs(files)
-        if (files.length > 0) setSelectedPdf(files[0].url)
       }
     }
 
@@ -44,24 +45,46 @@ export default function Home() {
     setQuery("")
   }
 
+  const handleSelectPdf = async (apiUrl: string, key: string) => {
+    setLoadingPdf(true)
+    setSelectedPdf(null)
+    setSelectedKey(key) 
+    
+
+    try {
+      const res = await fetch(apiUrl)
+      const { url: signedUrl } = await res.json()
+
+      setSelectedPdf(
+        `https://docs.google.com/viewer?url=${encodeURIComponent(
+          signedUrl
+        )}&embedded=true`
+      )
+    } catch (err) {
+      console.error("Error fetching signed URL", err)
+    }
+  }
+
   return (
     <div>
       <Navbar />
-      <div className="flex px-5 items-center flex-col w-full">
-        <div className="w-full my-8 mx-4 flex flex-col md:flex-row h-auto md:h-[800px] border rounded-lg overflow-hidden">
+      <div className="flex px-5  items-center flex-col w-full">
+        <div className="w-full shadow-lg my-8 mx-4 flex flex-col md:flex-row h-auto md:h-[560px] border rounded-lg overflow-hidden">
+          
           {/* Sidebar with PDF list */}
           <div className="w-full md:w-1/6 border-b md:border-b-0 md:border-r overflow-y-auto bg-gray-50">
             <h2 className="text-lg font-bold p-4 border-b">Select PDF</h2>
             <ul className="space-y-1 p-2">
               {pdfs.length === 0 && <li className="p-2">No PDFs found.</li>}
               {pdfs.map((pdf) => (
-                <li key={pdf.url}>
+                <li key={pdf.key}>
                   <button
-                    className={`block w-full text-left px-3 py-2 rounded hover:bg-gray-200 ${selectedPdf === pdf.url
+                    className={`block w-full text-left px-3 py-2 rounded hover:bg-gray-200 ${
+                      selectedKey === pdf.key
                         ? "bg-blue-100 font-bold text-blue-700"
                         : "text-gray-700"
-                      }`}
-                    onClick={() => setSelectedPdf(pdf.url)}
+                    }`}
+                    onClick={() => handleSelectPdf(pdf.url, pdf.key)}
                   >
                     {pdf.key.slice(4, pdf.key.length - 4)}
                   </button>
@@ -71,22 +94,22 @@ export default function Home() {
           </div>
 
           {/* PDF viewer */}
-          <div className="flex-1 md:flex-[2] border-b md:border-b-0 md:border-r min-h-[400px]">
+          <div className="flex-1 md:flex-[2] border-b md:border-b-0 md:border-r min-h-[400px] relative">
             {selectedPdf ? (
-              // <iframe
-              //   src={selectedPdf}
-              //   width="100%"
-              //   height="100%"
-              //   className="border-0 min-h-[400px] md:h-full"
-              // />
-              <iframe
-                src={`https://docs.google.com/viewer?url=${encodeURIComponent(selectedPdf)}&embedded=true`}
-                width="100%"
-                height="800px"
-                className="border-0"
-              />
-              
-
+              <>
+                {loadingPdf && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-white/70 z-10">
+                    <div className="w-12 h-12 border-4 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
+                  </div>
+                )}
+                <iframe
+                  src={selectedPdf}
+                  width="100%"
+                  height="800px"
+                  className="border-0"
+                  onLoad={() => setLoadingPdf(false)}
+                />
+              </>
             ) : (
               <div className="flex items-center justify-center h-full text-gray-500">
                 Select a PDF to view
@@ -117,7 +140,7 @@ export default function Home() {
                 type="text"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Ask a question about this PDF..."
+                placeholder="Ask a question..."
                 className="flex-1 border rounded px-3 py-2 text-sm focus:outline-none focus:ring focus:ring-blue-200"
               />
               <button
