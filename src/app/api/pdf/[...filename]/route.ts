@@ -5,15 +5,13 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL as string,
   process.env.SUPABASE_SERVICE_ROLE_KEY as string
 )
-
-// Match Next.js validator (expects Promise<{ filename: string[] }>)
 type CatchAllParams = { params: Promise<{ filename: string[] }> }
 
 export async function GET(
   req: NextRequest,
   { params }: CatchAllParams
 ): Promise<NextResponse> {
-  // resolve params because Next.js types them as a Promise
+
   const resolved = await params
   const filePath = resolved.filename.join("/")
 
