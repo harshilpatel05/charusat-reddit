@@ -12,7 +12,7 @@ import {
 import Image from "next/image"
 export default function Navbar() {
     return (
-        <div className="p-2 shadow-sm flex flex-row justify-between">
+        <div className="p-2 shadow-md flex flex-row justify-between">
            <div>
                <Image className="p-2" src ="/charusatlogo.png" height={300} width={300} alt="Logo"></Image>
            </div>
