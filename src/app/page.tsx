@@ -1,158 +1,22 @@
-'use client'
-import Navbar from "@/components/Navbar"
-import { useEffect, useState } from "react"
-import { createClient } from "@/utils/supabase/client"
 
-type QA = { question: string; answer?: string }
+import { cookies } from 'next/headers';
+import jwt from 'jsonwebtoken';
+import { redirect } from 'next/navigation';
 
-export default function Home() {
-  const [pdfs, setPdfs] = useState<{ key: string; url: string }[]>([])
-  const [selectedPdf, setSelectedPdf] = useState<string | null>(null)
-  const [selectedKey, setSelectedKey] = useState<string | null>(null) // track highlighted file
-  const [loadingPdf, setLoadingPdf] = useState(false)
-  const [query, setQuery] = useState("")
-  const [qaList, setQaList] = useState<QA[]>([])
+import DashboardClient from './DashboardClient';
 
-  useEffect(() => {
-    const supabase = createClient()
-
-    const fetchPdfs = async () => {
-      const { data, error } = await supabase.storage.from("pdf").list("pdf")
-      if (error) return
-
-      if (data) {
-        const files = data
-          .filter((item) => item.name.endsWith(".pdf"))
-          .map((item) => {
-            const key = `pdf/${item.name}`
-            const apiUrl = `/api/pdf/${encodeURIComponent("pdf")}/${encodeURIComponent(item.name)}`
-            return { key, url: apiUrl }
-          })
-
-        setPdfs(files)
-      }
-    }
-
-    fetchPdfs()
-  }, [])
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!query.trim()) return
-
-    const newEntry: QA = { question: query }
-    setQaList((prev) => [...prev, newEntry])
-    setQuery("")
+export default async function Home() {
+  let user: { email: string; isFaculty: boolean } | null = null;
+  try {
+    const cookieStore = await cookies();
+    const token = cookieStore.get('authToken')?.value;
+    if (!token) throw new Error('No token');
+    const secret = process.env.JWT_SECRET;
+    if (!secret) throw new Error('JWT_SECRET not set');
+    user = jwt.verify(token, secret) as { email: string; isFaculty: boolean };
+  } catch {
+    redirect('/auth/login');
   }
 
-  const handleSelectPdf = async (apiUrl: string, key: string) => {
-    setLoadingPdf(true)
-    setSelectedPdf(null)
-    setSelectedKey(key) 
-    
-
-    try {
-      const res = await fetch(apiUrl)
-      const { url: signedUrl } = await res.json()
-
-      setSelectedPdf(
-        `https://docs.google.com/viewer?url=${encodeURIComponent(
-          signedUrl
-        )}&embedded=true`
-      )
-    } catch (err) {
-      console.error("Error fetching signed URL", err)
-    }
-  }
-
-  return (
-    <div>
-      <Navbar />
-      <div className="flex px-5  items-center flex-col w-full">
-        <div className="w-full shadow-lg my-8 mx-4 flex flex-col md:flex-row h-auto md:h-[560px] border rounded-lg overflow-hidden">
-          
-          {/* Sidebar with PDF list */}
-          <div className="w-full md:w-1/6 border-b md:border-b-0 md:border-r overflow-y-auto bg-gray-50">
-            <h2 className="text-lg font-bold p-4 border-b">Select PDF</h2>
-            <ul className="space-y-1 p-2">
-              {pdfs.length === 0 && <li className="p-2">No PDFs found.</li>}
-              {pdfs.map((pdf) => (
-                <li key={pdf.key}>
-                  <button
-                    className={`block w-full text-left px-3 py-2 rounded hover:bg-gray-200 ${
-                      selectedKey === pdf.key
-                        ? "bg-blue-100 font-bold text-blue-700"
-                        : "text-gray-700"
-                    }`}
-                    onClick={() => handleSelectPdf(pdf.url, pdf.key)}
-                  >
-                    {pdf.key.slice(4, pdf.key.length - 4)}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* PDF viewer */}
-          <div className="flex-1 md:flex-[2] border-b md:border-b-0 md:border-r min-h-[400px] relative">
-            {selectedPdf ? (
-              <>
-                {loadingPdf && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-white/70 z-10">
-                    <div className="w-12 h-12 border-4 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
-                  </div>
-                )}
-                <iframe
-                  src={selectedPdf}
-                  width="100%"
-                  height="800px"
-                  className="border-0"
-                  onLoad={() => setLoadingPdf(false)}
-                />
-              </>
-            ) : (
-              <div className="flex items-center justify-center h-full text-gray-500">
-                Select a PDF to view
-              </div>
-            )}
-          </div>
-
-          {/* Q&A Panel */}
-          <div className="w-full md:w-1/4 flex flex-col bg-white border-t md:border-t-0 md:border-l">
-            <h2 className="text-lg font-bold p-4 border-b">Q&A on this PDF</h2>
-
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
-              {qaList.length === 0 && (
-                <p className="text-gray-400 italic">No questions asked yet.</p>
-              )}
-              {qaList.map((qa, i) => (
-                <div key={i} className="border rounded p-3 bg-gray-50">
-                  <p className="font-semibold text-gray-800">Q: {qa.question}</p>
-                  <p className="mt-2 text-gray-700">
-                    A: {qa.answer ? qa.answer : "This query has not been answered yet."}
-                  </p>
-                </div>
-              ))}
-            </div>
-
-            <form onSubmit={handleSubmit} className="p-4 border-t flex gap-2">
-              <input
-                type="text"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Ask a question..."
-                className="flex-1 border rounded px-3 py-2 text-sm focus:outline-none focus:ring focus:ring-blue-200"
-              />
-              <button
-                type="submit"
-                className="bg-blue-100 text-blue-600 px-5 py-2 rounded-full hover:bg-blue-200 transition"
-              >
-                Submit
-              </button>
-            </form>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
+  return <DashboardClient email={user!.email} isFaculty={user!.isFaculty} />;
 }

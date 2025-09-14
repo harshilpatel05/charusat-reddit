@@ -1,26 +1,48 @@
 'use client'
 import Navbar from "@/components/Navbar"
 import { useState } from "react"
+import { useRouter } from "next/navigation"
+import Link from "next/link"   // 👈 import Link
 
 export default function Login() {
+  const router = useRouter();
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [message, setMessage] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     if (!email || !password) {
-      setMessage("⚠️ Please fill in all fields.")
-      return
+      setMessage("Warning: Please fill in all fields.");
+      return;
     }
 
     setLoading(true)
-    setTimeout(() => {
+    setMessage(null)
+
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        setMessage(`Error: ${data.error || "Login failed"}`)
+      } else {
+        setMessage("Success: Logged in.")
+        localStorage.setItem("authToken", data.token)
+        localStorage.setItem("user", JSON.stringify(data.user))
+        setTimeout(() => router.push("/"), 1000);
+      }
+    } catch (err) {
+      console.error("Login failed:", err)
+      setMessage("Error: Could not connect to server.")
+    } finally {
       setLoading(false)
-      setMessage(`✅ Logged in as ${email}`)
-      setEmail("")
-      setPassword("")
-    }, 1500) // simulate login
+    }
   }
 
   return (
@@ -55,14 +77,26 @@ export default function Login() {
               className="w-full border rounded px-3 py-2 mb-4 text-sm focus:outline-none focus:ring focus:ring-blue-200"
             />
 
-            {/* Submit */}
+            {/* Button */}
             <button
               onClick={handleLogin}
               disabled={loading}
-              className="mt-3 w-full bg-blue-600 text-white py-2 rounded-lg font-medium hover:bg-blue-700 transition disabled:opacity-50"
+              className="mt-3 w-full bg-blue-600 text-white py-2 rounded-lg font-medium hover:bg-blue-700 transition disabled:opacity-50 flex justify-center items-center"
             >
-              {loading ? "Logging in..." : "Login"}
+              {loading ? (
+                <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+              ) : (
+                "Login"
+              )}
             </button>
+
+            {/* Link to Signup */}
+            <p className="mt-4 text-center text-sm text-gray-600">
+              Don’t have an account?{" "}
+              <Link href="/auth/signup" className="text-blue-600 font-medium hover:underline">
+                Sign up
+              </Link>
+            </p>
 
             {/* Message */}
             {message && (

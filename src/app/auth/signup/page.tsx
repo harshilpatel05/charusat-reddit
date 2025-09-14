@@ -1,33 +1,76 @@
 'use client'
 import Navbar from "@/components/Navbar"
+import Link from "next/link"
 import { useState } from "react"
-
+import { useRouter } from "next/navigation"
+type User = {
+  username: string,
+  email: string,
+  password: string,
+}
 export default function Signup() {
+  const router = useRouter();
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
   const [message, setMessage] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
-  const handleSignup = () => {
+  const validateFields = () => {
+    const emailRegex = /^(\d{2}[a-z]+[0-9]+@charusat\.edu\.in|[a-z]+(\.[a-z]+)?@charusat\.ac\.in)$/i;
     if (!email || !password || !confirmPassword) {
-      setMessage("⚠️ Please fill in all fields.")
-      return
+      setMessage("Warning: Please fill in all fields.");
+      return false;
     }
     if (password !== confirmPassword) {
-      setMessage("⚠️ Passwords do not match.")
-      return
+      setMessage("Warning: Passwords do not match.");
+      return false;
+    }
+    if (!emailRegex.test(email)) {
+      setMessage("Warning: Please use a valid Charusat email.");
+      return false;
     }
 
-    setLoading(true)
-    setTimeout(() => {
-      setLoading(false)
-      setMessage(`✅ Account created for ${email}`)
-      setEmail("")
-      setPassword("")
-      setConfirmPassword("")
-    }, 1500) // simulate signup
-  }
+    return true;
+  };
+
+  const handleSignup = async () => {
+    if (!validateFields()) return;
+    setLoading(true);
+    setMessage(null);
+
+    try {
+      // Faculty check: emails ending in @charusat.ac.in
+      const isFaculty = email.toLowerCase().endsWith("@charusat.ac.in");
+
+      const res = await fetch("/api/auth/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email,
+          password,
+          name: email.split("@")[0],
+          isFaculty, // ✅ send to backend
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setMessage(`Error: ${data.error || "Something went wrong"}`);
+      } else {
+        setMessage("Success: Account created.");
+        localStorage.setItem("authToken", data.token);
+        setTimeout(() => router.push("/auth/login"), 1000);
+      }
+    } catch (err) {
+      console.error("Signup failed:", err);
+      setMessage("Error: Could not connect to server.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
 
   return (
     <div>
@@ -49,7 +92,6 @@ export default function Signup() {
               className="w-full border rounded px-3 py-2 mb-4 text-sm focus:outline-none focus:ring focus:ring-blue-200"
             />
 
-            {/* Password */}
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Password
             </label>
@@ -73,21 +115,33 @@ export default function Signup() {
               className="w-full border rounded px-3 py-2 mb-4 text-sm focus:outline-none focus:ring focus:ring-blue-200"
             />
 
-            {/* Submit */}
+            {/* Button */}
             <button
               onClick={handleSignup}
               disabled={loading}
-              className="mt-3 w-full bg-blue-600 text-white py-2 rounded-lg font-medium hover:bg-blue-700 transition disabled:opacity-50"
+              className="mt-3 w-full bg-blue-600 text-white py-2 rounded-lg font-medium hover:bg-blue-700 transition disabled:opacity-50 flex justify-center items-center"
             >
-              {loading ? "Signing up..." : "Sign Up"}
+              {loading ? (
+                <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+              ) : (
+                "Sign Up"
+              )}
             </button>
+              {/* Link to Signup */}
+            <p className="mt-4 text-center text-sm text-gray-600">
+              Already Have an account?{" "}
+              <Link href="/auth/login" className="text-blue-600 font-medium hover:underline">
+                Login
+              </Link>
+            </p>
 
-            {/* Message */}
+
             {message && (
               <p className="mt-4 text-center text-sm bg-blue-200 p-2 rounded-2xl border-2 border-blue-500 text-blue-800 font-bold">
                 {message}
               </p>
             )}
+          
           </div>
         </div>
       </div>

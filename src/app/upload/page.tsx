@@ -14,29 +14,40 @@ export default function Upload() {
       setMessage(null)
     }
   }
-
-  const handleUpload = () => {
+  const handleUpload = async () => {
     if (!title.trim()) {
-      setMessage("Warning: Please enter a title for the PDF.")
-      return
+      setMessage("Warning: Please enter a title for the PDF.");
+      return;
     }
     if (!file) {
-      setMessage("Warning : Please select a PDF file first.")
-      return
+      setMessage("Warning : Please select a PDF file first.");
+      return;
     }
     if (file.type !== "application/pdf") {
-      setMessage("Warning: Only PDF files are allowed.")
-      return
+      setMessage("Warning: Only PDF files are allowed.");
+      return;
     }
-
-    setUploading(true)
-    setTimeout(() => {
-      setUploading(false)
-      setMessage(`Success: File uploaded: "${title}" (${file.name})`)
-      setFile(null)
-      setTitle("")
-    }, 1500) 
-  }
+    setUploading(true);
+    setMessage(null);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("title", title);
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Upload failed");
+      setMessage(`Success: File uploaded: "${title}" (${file.name})`);
+      setFile(null);
+      setTitle("");
+    } catch (err: any) {
+      setMessage(err.message || "Upload failed");
+    } finally {
+      setUploading(false);
+    }
+  };
 
   return (
 
@@ -49,7 +60,6 @@ export default function Upload() {
               <h1 className="text-xl font-bold mb-6 text-center">
                 Upload a PDF
               </h1>
-              {/* Title Input */}
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 PDF Title
               </label>
@@ -59,8 +69,7 @@ export default function Upload() {
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="Enter PDF title..."
                 className="w-full border rounded px-3 py-2 mb-4 text-sm focus:outline-none focus:ring focus:ring-blue-200"
-              />
-              {/* File Input */}
+              />  
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Choose PDF File
               </label>
@@ -78,15 +87,15 @@ export default function Upload() {
                   Selected: <span className="font-medium">{file.name}</span>
                 </p>
               )}
-              {/* Upload Button */}
               <button
                 onClick={handleUpload}
                 disabled={uploading}
-                className="mt-5 w-full bg-blue-600 text-white py-2 rounded-lg font-medium hover:bg-blue-700 transition disabled:opacity-50"
+                className="mt-5 w-full bg-blue-600 text-white py-2 rounded-lg font-medium hover:bg-blue-700 transition disabled:opacity-50 flex items-center justify-center gap-2"
               >
-                {uploading ? "Uploading..." : "Upload"}
+                {uploading ? (
+                  <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                ) : "Upload"}
               </button>
-              {/* Status Message */}
               {message && (
                 <p className="mt-4 text-center text-sm bg-blue-200 p-2 rounded-2xl border-2 border-blue-500 text-blue-800 font-bold">{message}</p>
               )}
