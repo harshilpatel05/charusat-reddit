@@ -16,7 +16,7 @@ export default function Navbar({ showLogout }: NavbarProps) {
                              <Image className="p-2" src ="/charusatlogo.png" height={300} width={300} alt="Logo"></Image>
                      </div>
                      <div className="flex flex-col items-center justify-center text-2xl p-2 font-bold">
-                             <p>Cheddit</p>
+                             <p>Project Name</p>
                      </div>
                      {showLogout && (
                          <button
