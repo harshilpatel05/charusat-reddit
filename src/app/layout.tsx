@@ -13,12 +13,11 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+
 export const metadata: Metadata = {
   title: "Cheddit",
   description: "Made by 24DCS073",
 };
-
-const PageTransitionLoader = dynamic(() => import("@/components/PageTransitionLoader"), { ssr: false });
 
 export default function RootLayout({
   children,
