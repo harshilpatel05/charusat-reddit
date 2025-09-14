@@ -40,6 +40,56 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ error: "Server error" }, { status: 500 })
     }
 }
+// --- PATCH: update answer for a query ---
+export async function PATCH(req: NextRequest) {
+    try {
+        const { id, answer } = await req.json()
+        if (!id || !answer) {
+            return NextResponse.json({ error: "Missing id or answer" }, { status: 400 })
+        }
+
+        // --- Auth ---
+        const cookieStore = await cookies()
+        const token = cookieStore.get("authToken")?.value
+        if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+
+        const secret = process.env.JWT_SECRET
+        if (!secret) return NextResponse.json({ error: "Server misconfigured" }, { status: 500 })
+
+        let user
+        try {
+            user = jwt.verify(token, secret) as { id: string; email: string; isFaculty: boolean }
+        } catch {
+            return NextResponse.json({ error: "Invalid token" }, { status: 401 })
+        }
+
+        if (!user.isFaculty) {
+            return NextResponse.json({ error: "Only faculty can answer queries" }, { status: 403 })
+        }
+
+        // --- Update query ---
+        const supabase = createClient()
+        const { data: updated, error } = await supabase
+            .from("queries")
+            .update({ answer })
+            .eq("id", id)
+            .select()
+            .single()
+
+        if (error) {
+            console.error("[Queries API] Answer update error:", error)
+            return NextResponse.json({ error: error.message }, { status: 500 })
+        }
+
+        return NextResponse.json({ query: updated })
+    } catch (err: unknown) {
+        console.error("[Queries API] PATCH fatal error:", err)
+        if (err instanceof Error) {
+            return NextResponse.json({ error: err.message }, { status: 500 })
+        }
+        return NextResponse.json({ error: "Server error" }, { status: 500 })
+    }
+}
 
 export async function POST(req: NextRequest) {
     try {
