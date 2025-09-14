@@ -142,23 +142,23 @@ export default function DashboardClient({ isFaculty }: DashboardClientProps) {
   return (
     <div>
       <Navbar />
-      {isFaculty && (
-        <div className="w-full flex justify-end mt-6 pr-8">
-          <button
-            className="bg-blue-100 text-blue-600 px-4 py-2 rounded-full shadow hover:bg-blue-200 transition flex items-center gap-2"
-            onClick={() => window.location.href = '/upload'}
-          >
-            <CirclePlus size={20} className="" />
-            Upload
-          </button>
-        </div>
-      )}
       <div className="flex px-5 items-center flex-col w-full">
-          <div className="w-full shadow-lg my-8 mx-4 flex flex-col md:flex-row h-auto md:h-[560px] border rounded-lg overflow-hidden">
-            {/* Sidebar with PDF list */}
-            <div className="w-full md:w-1/6 border-b md:border-b-0 md:border-r overflow-y-auto bg-gray-50">
-              <h2 className="text-lg font-bold p-4 border-b">Select PDF</h2>
-              <ul className="space-y-1 p-2">
+        <div className="w-full shadow-lg my-8 mx-4 flex flex-col md:flex-row h-auto md:h-[560px] border rounded-lg overflow-hidden">
+          {/* Sidebar with PDF list */}
+          <div className="w-full md:w-1/6 border-b md:border-b-0 md:border-r overflow-y-auto bg-gray-50">
+            <div className="flex items-center justify-between p-4 border-b">
+              <h2 className="text-lg font-bold m-0">Select PDF</h2>
+              {isFaculty && (
+                <button
+                  className="bg-blue-100 text-blue-600 px-3 py-1 rounded-full shadow hover:bg-blue-200 transition flex items-center gap-2 text-sm"
+                  onClick={() => window.location.href = '/upload'}
+                >
+                  <CirclePlus size={16} className="" />
+                  Upload
+                </button>
+              )}
+            </div>
+            <ul className="space-y-1 p-2">
                 {pdfs.length === 0 && <li className="p-2">No PDFs found.</li>}
                 {pdfs.map((pdf) => (
                   <li key={pdf.key}>
