@@ -11,9 +11,8 @@ type DashboardClientProps = {
   isFaculty: boolean;
 };
 
-import { useCallback } from "react";
 
-export default function DashboardClient({ email, isFaculty }: DashboardClientProps) {
+export default function DashboardClient({ isFaculty }: DashboardClientProps) {
   // --- Push Notification Setup ---
   useEffect(() => {
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
