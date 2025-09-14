@@ -168,7 +168,7 @@ function urlBase64ToUint8Array(base64String: string) {
                                             }`}
                                         onClick={() => handleSelectPdf(pdf.url, pdf.key)}
                                     >
-                                        {pdf.name}
+                                        {pdf.name.slice(pdf.name.indexOf("_") + 1,pdf.name.length)}
                                     </button>
                                 </li>
                             ))}
