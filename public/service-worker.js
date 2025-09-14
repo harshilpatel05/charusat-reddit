@@ -3,8 +3,8 @@ self.addEventListener('push', function(event) {
   const title = data.title || 'Cheddit Notification';
   const options = {
     body: data.body || '',
-    icon: '/icon-192x192.png',
-    badge: '/icon-192x192.png',
+    icon: '/favicon.ico',
+    badge: '/favicon.ico',
     data: data.url ? { url: data.url } : undefined
   };
   event.waitUntil(self.registration.showNotification(title, options));

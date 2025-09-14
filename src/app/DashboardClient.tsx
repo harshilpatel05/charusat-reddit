@@ -18,12 +18,17 @@ export default function DashboardClient({ isFaculty }: DashboardClientProps) {
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
     if (!isFaculty) return;
 
+    let interval: NodeJS.Timeout;
+
     const checkAndPrompt = async () => {
+      console.log("[Push] Notification.permission:", Notification.permission);
       if (Notification.permission !== 'granted') {
+        console.log("[Push] Prompting for notification permission...");
         await Notification.requestPermission();
       }
       if (Notification.permission === 'granted') {
         // Register service worker and subscribe if not already
+        console.log("[Push] Permission granted, registering service worker and subscribing...");
         const reg = await navigator.serviceWorker.register('/service-worker.js');
         const sub = await reg.pushManager.getSubscription();
         if (!sub) {
@@ -34,16 +39,20 @@ export default function DashboardClient({ isFaculty }: DashboardClientProps) {
             userVisibleOnly: true,
             applicationServerKey: convertedVapidKey
           });
+          console.log("[Push] Subscribing and sending to backend...");
           await fetch('/api/push-subscribe', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ subscription: newSub })
           });
+        } else {
+          console.log("[Push] Already subscribed.");
         }
       }
     };
 
-    checkAndPrompt(); // Only on mount (when dashboard is opened)
+    checkAndPrompt();
+    interval = setInterval(checkAndPrompt, 10000); // every 10 seconds
 
     // Helper to convert VAPID key
     function urlBase64ToUint8Array(base64String: string) {
@@ -56,6 +65,8 @@ export default function DashboardClient({ isFaculty }: DashboardClientProps) {
       }
       return outputArray;
     }
+
+    return () => clearInterval(interval);
   }, [isFaculty]);
   const [pdfs, setPdfs] = useState<{ key: string; url: string; name: string }[]>([]);
   const [selectedPdf, setSelectedPdf] = useState<string | null>(null);
