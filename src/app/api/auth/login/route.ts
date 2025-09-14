@@ -12,6 +12,10 @@ export async function POST(req: Request) {
   try {
     const { email, password } = await req.json()
 
+    if (!email || !password) {
+      return NextResponse.json({ error: "Missing email or password" }, { status: 400 })
+    }
+
     // Get user from DB
     const { data: user, error } = await supabase
       .from("users")
@@ -29,20 +33,26 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Invalid email or password" }, { status: 400 })
     }
 
-    // Create JWT
+    // Generate JWT
     const token = jwt.sign(
       { id: user.id, email: user.email, isFaculty: user.is_faculty },
       process.env.JWT_SECRET!,
       { expiresIn: "7d" }
     )
 
-    // Create response
-    const res = NextResponse.json({ user: { id: user.id, email: user.email, isFaculty: user.is_faculty } })
+    // Prepare user object (strip password)
+    const { password: _removed, ...userWithoutPassword } = user
 
-    // ✅ Set cookie
+    // Create response
+    const res = NextResponse.json({
+      user: userWithoutPassword,
+      token, // optional: you can omit this if you only want cookie auth
+    })
+
+    // Set cookie
     res.cookies.set("authToken", token, {
-      httpOnly: true, // not accessible from JS
-      secure: process.env.NODE_ENV === "production", // only https in prod
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
       path: "/",
       maxAge: 60 * 60 * 24 * 7, // 7 days

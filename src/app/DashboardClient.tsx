@@ -14,58 +14,44 @@ type DashboardClientProps = {
 
 export default function DashboardClient({ isFaculty }: DashboardClientProps) {
     // --- Push Notification Setup ---
-    useEffect(() => {
-        if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
-        if (!isFaculty) return;
+   useEffect(() => {
+  if (!("serviceWorker" in navigator) || !("PushManager" in window)) return
+  if (!isFaculty) return
 
-        const checkAndPrompt = async () => {
-            console.log("[Push] Notification.permission:", Notification.permission);
-            if (Notification.permission !== 'granted') {
-                console.log("[Push] Prompting for notification permission...");
-                await Notification.requestPermission();
-            }
-            if (Notification.permission === 'granted') {
-                // Register service worker and subscribe if not already
-                console.log("[Push] Permission granted, registering service worker and subscribing...");
-                const reg = await navigator.serviceWorker.register('/service-worker.js');
-                const sub = await reg.pushManager.getSubscription();
-                if (!sub) {
-                    const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
-                    if (!vapidPublicKey) return;
-                    const convertedVapidKey = urlBase64ToUint8Array(vapidPublicKey);
-                    const newSub = await reg.pushManager.subscribe({
-                        userVisibleOnly: true,
-                        applicationServerKey: convertedVapidKey,
-                    });
-                    console.log("[Push] Subscribing and sending to backend...");
-                    await fetch('/api/push-subscribe', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ subscription: newSub }),
-                    });
-                } else {
-                    console.log("[Push] Already subscribed.");
-                }
-            }
-        };
+  const subscribeUser = async () => {
+    try {
+      const reg = await navigator.serviceWorker.register("/service-worker.js")
+      let sub = await reg.pushManager.getSubscription()
 
-        checkAndPrompt();
-        const interval = setInterval(checkAndPrompt, 10000); // ✅ fixed: const instead of let
+      if (!sub) {
+        const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!
+        const convertedVapidKey = urlBase64ToUint8Array(vapidPublicKey)
+        sub = await reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: convertedVapidKey,
+        })
+      }
 
-        // Helper to convert VAPID key
-        function urlBase64ToUint8Array(base64String: string) {
-            const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
-            const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
-            const rawData = window.atob(base64);
-            const outputArray = new Uint8Array(rawData.length);
-            for (let i = 0; i < rawData.length; ++i) {
-                outputArray[i] = rawData.charCodeAt(i);
-            }
-            return outputArray;
-        }
+      console.log("[Push] Subscribing and sending to backend...")
+      await fetch("/api/push-subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ subscription: sub }), // ✅ correct payload
+      })
+    } catch (err) {
+      console.error("[Push] Subscription failed:", err)
+    }
+  }
 
-        return () => clearInterval(interval);
-    }, [isFaculty]);
+  subscribeUser()
+}, [isFaculty])
+
+function urlBase64ToUint8Array(base64String: string) {
+  const padding = "=".repeat((4 - (base64String.length % 4)) % 4)
+  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/")
+  const rawData = atob(base64)
+  return Uint8Array.from([...rawData].map((char) => char.charCodeAt(0)))
+}
 
     const [pdfs, setPdfs] = useState<{ key: string; url: string; name: string }[]>([]);
     const [selectedPdf, setSelectedPdf] = useState<string | null>(null);
