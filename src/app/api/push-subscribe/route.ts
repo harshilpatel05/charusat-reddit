@@ -24,6 +24,10 @@ export async function POST(req: NextRequest) {
     user_email: userEmail,
     subscription
   }, { onConflict: 'user_email' });
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error){
+    console.log(error)
+    return NextResponse.json({ error: error.message }, { status: 500 });
+
+  }
   return NextResponse.json({ success: true });
 }
