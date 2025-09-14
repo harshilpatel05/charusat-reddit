@@ -63,7 +63,7 @@ export async function POST(req: Request) {
         );
 
         // Don’t return password
-        const { password: _, ...userWithoutPassword } = user;
+    const { password: _pw, ...userWithoutPassword } = user;
 
         return NextResponse.json(
             { user: userWithoutPassword, token },

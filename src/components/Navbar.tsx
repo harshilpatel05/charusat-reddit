@@ -1,14 +1,5 @@
 'use client'
-import {
-    NavigationMenu,
-    NavigationMenuContent,
-    NavigationMenuIndicator,
-    NavigationMenuItem,
-    NavigationMenuLink,
-    NavigationMenuList,
-    NavigationMenuTrigger,
-    NavigationMenuViewport,
-} from "@/components/ui/navigation-menu"
+// Removed unused NavigationMenu imports
 import Image from "next/image"
 export default function Navbar() {
     return (

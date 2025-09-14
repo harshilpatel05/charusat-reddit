@@ -42,8 +42,12 @@ export default function Upload() {
       setMessage(`Success: File uploaded: "${title}" (${file.name})`);
       setFile(null);
       setTitle("");
-    } catch (err: any) {
-      setMessage(err.message || "Upload failed");
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setMessage(err.message);
+      } else {
+        setMessage("Upload failed");
+      }
     } finally {
       setUploading(false);
     }

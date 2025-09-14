@@ -3,11 +3,6 @@ import Navbar from "@/components/Navbar"
 import Link from "next/link"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-type User = {
-  username: string,
-  email: string,
-  password: string,
-}
 export default function Signup() {
   const router = useRouter();
   const [email, setEmail] = useState("")
