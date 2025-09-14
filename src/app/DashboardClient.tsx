@@ -83,8 +83,9 @@ export default function DashboardClient({ isFaculty }: DashboardClientProps) {
           .map((item) => {
             const key = `pdf/${item.name}`;
             const apiUrl = `/api/pdf/${encodeURIComponent("pdf")}/${encodeURIComponent(item.name)}`;
-            // Add name property for display
-            return { key, url: apiUrl, name: item.name };
+            // Always extract only the file name for display
+            const displayName = item.name.split('/').pop() || item.name;
+            return { key, url: apiUrl, name: displayName };
           });
         setPdfs(files);
       }

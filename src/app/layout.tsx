@@ -33,7 +33,14 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {children}
+        {/* Loader between page transitions */}
+        <div suppressHydrationWarning={true}>
+          {typeof window !== 'undefined' ? (
+            require("@/components/PageTransitionLoader").default({ children })
+          ) : (
+            children
+          )}
+        </div>
       </body>
     </html>
   );
