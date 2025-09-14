@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-export async function POST(req: NextRequest) {
+export async function POST() {
   // Remove the authToken cookie
   return NextResponse.json({ success: true }, {
     status: 200,

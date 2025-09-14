@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
     // Upload to Supabase Storage (bucket: pdf, folder: pdf/)
     const fileName = `${Date.now()}_${file.name}`;
     const filePath = `pdf/${fileName}`;
-    const { data: uploadData, error: uploadError } = await supabase.storage.from("pdf").upload(filePath, file, { contentType: "application/pdf" });
+    const {error: uploadError } = await supabase.storage.from("pdf").upload(filePath, file, { contentType: "application/pdf" });
     if (uploadError) {
       console.error("Supabase upload error:", uploadError.message);
       return NextResponse.json({ error: uploadError.message }, { status: 500 });
