@@ -139,182 +139,142 @@ function urlBase64ToUint8Array(base64String: string) {
     };
 
     return (
-     <div>
-  <Navbar showLogout />
-  <div className="flex px-5 items-center flex-col w-full">
-    <div className="w-full shadow-lg my-8 mx-4 flex flex-col md:flex-row h-[calc(100vh-150px)] border rounded-lg overflow-hidden">
-      {/* Sidebar with PDF list */}
-      <div className="w-full md:w-1/6 border-b md:border-b-0 md:border-r overflow-y-auto bg-gray-50">
-        <div className="flex items-center justify-between p-4 border-b sticky top-0 bg-gray-50 z-10">
-          <h2 className="text-lg font-bold m-0">Select PDF</h2>
-          {isFaculty && (
-            <button
-              className="bg-blue-100 text-blue-600 px-3 py-1 rounded-full shadow hover:bg-blue-200 transition flex items-center gap-2 text-sm"
-              onClick={() => (window.location.href = "/upload")}
-            >
-              <CirclePlus size={16} />
-              Upload
-            </button>
-          )}
-        </div>
-        <ul className="space-y-1 p-2 max-h-[calc(100vh-200px)] overflow-y-auto">
-          {pdfs.length === 0 && <li className="p-2">No PDFs found.</li>}
-          {pdfs.map((pdf) => (
-            <li key={pdf.key}>
-              <button
-                className={`block w-full text-left px-3 py-2 rounded hover:bg-gray-200 ${
-                  selectedKey === pdf.key
-                    ? "bg-blue-100 font-bold text-blue-700"
-                    : "text-gray-700"
-                }`}
-                onClick={() => handleSelectPdf(pdf.url, pdf.key)}
-              >
-                {pdf.name.slice(pdf.name.indexOf("_") + 1,pdf.name.length)}
-              </button>
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      {/* PDF viewer */}
-      <div className="flex-1 md:flex-[2] border-b md:border-b-0 md:border-r relative overflow-y-auto">
-        {selectedPdf ? (
-          <>
-            {loadingPdf && (
-              <div className="absolute inset-0 flex items-center justify-center bg-white/70 z-10">
-                <span className="w-12 h-12 border-4 border-blue-400 border-t-transparent rounded-full animate-spin"></span>
-              </div>
-            )}
-            <iframe
-              src={selectedPdf}
-              className="w-full h-full min-h-[400px] border-0"
-              onLoad={() => setLoadingPdf(false)}
-            />
-          </>
-        ) : (
-          <div className="flex items-center justify-center h-full text-gray-500">
-            Select a PDF to view
-          </div>
-        )}
-      </div>
-
-      {/* Q&A Panel */}
-      <div className="w-full md:w-1/4 flex flex-col bg-white border-t md:border-t-0 md:border-l">
-        <h2 className="text-lg font-bold p-4 border-b sticky top-0 bg-white z-10">
-          Q&A on this PDF
-        </h2>
-
-        {/* Scrollable Q&A list */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          {questionLoading ? (
-            <div className="flex items-center justify-center h-20">
-              <span className="w-8 h-8 border-4 border-blue-400 border-t-transparent rounded-full animate-spin"></span>
+        <div>
+            <Navbar showLogout />
+            <div className="flex px-5 items-center flex-col w-full">
+                <div className="w-full shadow-lg my-8 mx-4 flex flex-col md:flex-row h-auto md:h-[560px] border rounded-lg overflow-hidden">
+                    {/* Sidebar with PDF list */}
+                    <div className="w-full md:w-1/6 border-b md:border-b-0 md:border-r overflow-y-auto bg-gray-50">
+                        <div className="flex items-center justify-between p-4 border-b">
+                            <h2 className="text-lg font-bold m-0">Select PDF</h2>
+                            {isFaculty && (
+                                <button
+                                    className="bg-blue-100 text-blue-600 px-3 py-1 rounded-full shadow hover:bg-blue-200 transition flex items-center gap-2 text-sm"
+                                    onClick={() => window.location.href = '/upload'}
+                                >
+                                    <CirclePlus size={16} className="" />
+                                    Upload
+                                </button>
+                            )}
+                        </div>
+                        <ul className="space-y-1 p-2">
+                            {pdfs.length === 0 && <li className="p-2">No PDFs found.</li>}
+                            {pdfs.map((pdf) => (
+                                <li key={pdf.key}>
+                                    <button
+                                        className={`block w-full text-left px-3 py-2 rounded hover:bg-gray-200 ${selectedKey === pdf.key
+                                                ? "bg-blue-100 font-bold text-blue-700"
+                                                : "text-gray-700"
+                                            }`}
+                                        onClick={() => handleSelectPdf(pdf.url, pdf.key)}
+                                    >
+                                        {pdf.name}
+                                    </button>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                    {/* PDF viewer */}
+                    <div className="flex-1 md:flex-[2] border-b md:border-b-0 md:border-r min-h-[400px] relative">
+                        {selectedPdf ? (
+                            <>
+                                {loadingPdf && (
+                                    <div className="absolute inset-0 flex items-center justify-center bg-white/70 z-10">
+                                        <span className="w-12 h-12 border-4 border-blue-400 border-t-transparent rounded-full animate-spin"></span>
+                                    </div>
+                                )}
+                                <iframe
+                                    src={selectedPdf}
+                                    width="100%"
+                                    height="800px"
+                                    className="border-0"
+                                    onLoad={() => setLoadingPdf(false)}
+                                />
+                            </>
+                        ) : (
+                            <div className="flex items-center justify-center h-full text-gray-500">
+                                Select a PDF to view
+                            </div>
+                        )}
+                    </div>
+                    {/* Q&A Panel */}
+                    <div className="w-full md:w-1/4 flex flex-col bg-white border-t md:border-t-0 md:border-l">
+                        <h2 className="text-lg font-bold p-4 border-b">Q&A on this PDF</h2>
+                        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                            {questionLoading ? (
+                                <div className="flex items-center justify-center h-20">
+                                    <span className="w-8 h-8 border-4 border-blue-400 border-t-transparent rounded-full animate-spin"></span>
+                                </div>
+                            ) : qaList.length === 0 ? (
+                                <p className="text-gray-400 italic">No questions asked yet.</p>
+                            ) : qaList.map((qa) => (
+                                <div key={qa.id} className="border rounded p-3 bg-gray-50">
+                                    <p className="font-semibold text-gray-800">Q: {qa.question}</p>
+                                    {qa.answer ? (
+                                        <p className="mt-2 text-gray-700">A: {qa.answer}</p>
+                                    ) : (isFaculty && userId && qa.pdf_uploaded_by === userId) ? (
+                                        <form
+                                            onSubmit={async (e) => {
+                                                e.preventDefault();
+                                                setAnswerLoading((prev) => ({ ...prev, [qa.id]: true }));
+                                                try {
+                                                    const res = await fetch(`/api/queries`, {
+                                                        method: "PATCH",
+                                                        headers: { "Content-Type": "application/json" },
+                                                        body: JSON.stringify({ id: qa.id, answer: answerInputs[qa.id] }),
+                                                    });
+                                                    const data = await res.json();
+                                                    if (res.ok && data.query) {
+                                                        setQaList((prev) => prev.map(q => q.id === qa.id ? { ...q, answer: data.query.answer } : q));
+                                                        setAnswerInputs((prev) => ({ ...prev, [qa.id]: "" }));
+                                                    }
+                                                } finally {
+                                                    setAnswerLoading((prev) => ({ ...prev, [qa.id]: false }));
+                                                }
+                                            }}
+                                            className="flex gap-2 mt-2"
+                                        >
+                                            <input
+                                                type="text"
+                                                value={answerInputs[qa.id] || ""}
+                                                onChange={e => setAnswerInputs(prev => ({ ...prev, [qa.id]: e.target.value }))}
+                                                placeholder="Type answer..."
+                                                className="border rounded px-2 py-1 text-sm flex-1"
+                                                disabled={answerLoading[qa.id]}
+                                            />
+                                            <button
+                                                type="submit"
+                                                className="rounded-full bg-blue-100 hover:bg-blue-200 p-2 flex items-center justify-center"
+                                                disabled={answerLoading[qa.id] || !(answerInputs[qa.id] && answerInputs[qa.id].trim())}
+                                                title="Send answer"
+                                            >
+                                                <Send size={18} className="text-blue-900" />
+                                            </button>
+                                        </form>
+                                    ) : (
+                                        <p className="mt-2 text-gray-700">A: This query has not been answered yet.</p>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                        <form onSubmit={handleSubmit} className="p-4 border-t flex gap-2">
+                            <input
+                                type="text"
+                                value={query}
+                                onChange={(e) => setQuery(e.target.value)}
+                                placeholder="Ask a question..."
+                                className="flex-1 border rounded px-3 py-2 text-sm focus:outline-none focus:ring focus:ring-blue-200"
+                            />
+                            <button
+                                type="submit"
+                                className="bg-blue-100 text-blue-600 px-5 py-2 rounded-full hover:bg-blue-200 transition"
+                            >
+                                Submit
+                            </button>
+                        </form>
+                    </div>
+                </div>
             </div>
-          ) : qaList.length === 0 ? (
-            <p className="text-gray-400 italic">No questions asked yet.</p>
-          ) : (
-            qaList.map((qa) => (
-              <div key={qa.id} className="border rounded p-3 bg-gray-50">
-                <p className="font-semibold text-gray-800">
-                  Q: {qa.question}
-                </p>
-                {qa.answer ? (
-                  <p className="mt-2 text-gray-700">A: {qa.answer}</p>
-                ) : isFaculty && userId && qa.pdf_uploaded_by === userId ? (
-                  <form
-                    onSubmit={async (e) => {
-                      e.preventDefault();
-                      setAnswerLoading((prev) => ({
-                        ...prev,
-                        [qa.id]: true,
-                      }));
-                      try {
-                        const res = await fetch(`/api/queries`, {
-                          method: "PATCH",
-                          headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify({
-                            id: qa.id,
-                            answer: answerInputs[qa.id],
-                          }),
-                        });
-                        const data = await res.json();
-                        if (res.ok && data.query) {
-                          setQaList((prev) =>
-                            prev.map((q) =>
-                              q.id === qa.id
-                                ? { ...q, answer: data.query.answer }
-                                : q
-                            )
-                          );
-                          setAnswerInputs((prev) => ({
-                            ...prev,
-                            [qa.id]: "",
-                          }));
-                        }
-                      } finally {
-                        setAnswerLoading((prev) => ({
-                          ...prev,
-                          [qa.id]: false,
-                        }));
-                      }
-                    }}
-                    className="flex gap-2 mt-2"
-                  >
-                    <input
-                      type="text"
-                      value={answerInputs[qa.id] || ""}
-                      onChange={(e) =>
-                        setAnswerInputs((prev) => ({
-                          ...prev,
-                          [qa.id]: e.target.value,
-                        }))
-                      }
-                      placeholder="Type answer..."
-                      className="border rounded px-2 py-1 text-sm flex-1"
-                      disabled={answerLoading[qa.id]}
-                    />
-                    <button
-                      type="submit"
-                      className="rounded-full bg-blue-100 hover:bg-blue-200 p-2 flex items-center justify-center"
-                      disabled={
-                        answerLoading[qa.id] ||
-                        !(answerInputs[qa.id] && answerInputs[qa.id].trim())
-                      }
-                      title="Send answer"
-                    >
-                      <Send size={18} className="text-blue-900" />
-                    </button>
-                  </form>
-                ) : (
-                  <p className="mt-2 text-gray-700">
-                    A: This query has not been answered yet.
-                  </p>
-                )}
-              </div>
-            ))
-          )}
         </div>
-
-        {/* Question input */}
-        <form onSubmit={handleSubmit} className="p-4 border-t flex gap-2">
-          <input
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Ask a question..."
-            className="flex-1 border rounded px-3 py-2 text-sm focus:outline-none focus:ring focus:ring-blue-200"
-          />
-          <button
-            type="submit"
-            className="bg-blue-100 text-blue-600 px-5 py-2 rounded-full hover:bg-blue-200 transition"
-          >
-            Submit
-          </button>
-        </form>
-      </div>
-    </div>
-  </div>
-</div>
-
     );
 }
