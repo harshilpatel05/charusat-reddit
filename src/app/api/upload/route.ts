@@ -10,6 +10,7 @@ const supabase = createClient(
 
 export async function POST(req: NextRequest) {
     try {
+        console.log("[Upload API] 🚀 Request received at", new Date().toISOString());
         // --- Auth: get user from JWT ---
         const cookieStore = await cookies();
         const token = cookieStore.get("authToken")?.value;
