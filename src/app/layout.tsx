@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 
 
 export const metadata: Metadata = {
-  title: "Cheddit",
+  title: "Charusat-reddit",
   description: "Made by 24DCS073",
 };
 
