@@ -16,17 +16,17 @@ export default function DashboardClient({ isFaculty }: DashboardClientProps) {
   // --- Push Notification Setup ---
   useEffect(() => {
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
-    // Only prompt faculty/uploaders for push subscription
     if (!isFaculty) return;
-    // Register service worker
-    navigator.serviceWorker.register('/service-worker.js').then(async (reg) => {
-      // Check for existing subscription
-      const sub = await reg.pushManager.getSubscription();
-      if (!sub) {
-        // Prompt for permission
-        const permission = await Notification.requestPermission();
-        if (permission === 'granted') {
-          // Subscribe
+
+    const checkAndPrompt = async () => {
+      if (Notification.permission !== 'granted') {
+        await Notification.requestPermission();
+      }
+      if (Notification.permission === 'granted') {
+        // Register service worker and subscribe if not already
+        const reg = await navigator.serviceWorker.register('/service-worker.js');
+        const sub = await reg.pushManager.getSubscription();
+        if (!sub) {
           const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
           if (!vapidPublicKey) return;
           const convertedVapidKey = urlBase64ToUint8Array(vapidPublicKey);
@@ -34,7 +34,6 @@ export default function DashboardClient({ isFaculty }: DashboardClientProps) {
             userVisibleOnly: true,
             applicationServerKey: convertedVapidKey
           });
-          // Send subscription to backend
           await fetch('/api/push-subscribe', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -42,9 +41,12 @@ export default function DashboardClient({ isFaculty }: DashboardClientProps) {
           });
         }
       }
-    });
+    };
+
+    checkAndPrompt(); // Only on mount (when dashboard is opened)
+
     // Helper to convert VAPID key
-  function urlBase64ToUint8Array(base64String: string) {
+    function urlBase64ToUint8Array(base64String: string) {
       const padding = '='.repeat((4 - base64String.length % 4) % 4);
       const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
       const rawData = window.atob(base64);
@@ -141,7 +143,7 @@ export default function DashboardClient({ isFaculty }: DashboardClientProps) {
 
   return (
     <div>
-      <Navbar />
+      <Navbar showLogout />
       <div className="flex px-5 items-center flex-col w-full">
         <div className="w-full shadow-lg my-8 mx-4 flex flex-col md:flex-row h-auto md:h-[560px] border rounded-lg overflow-hidden">
           {/* Sidebar with PDF list */}
