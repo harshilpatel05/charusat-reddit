@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
         JSON.stringify({
           title: "New Query on Your PDF!",
           body: question,
-          url: `/dashboard?pdf=${pdf}`
+          url: `/`
         })
       ).catch(() => {});
     }
