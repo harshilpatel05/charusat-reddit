@@ -12,18 +12,18 @@ export async function POST(req: NextRequest) {
   if (!secret) return NextResponse.json({ error: "Server error" }, { status: 500 });
   let user;
   try {
-    user = jwt.verify(token, secret) as { id: string };
+    user = jwt.verify(token, secret) as { email: string };
   } catch {
     return NextResponse.json({ error: "Invalid token" }, { status: 401 });
   }
-  const userId = user.id;
+  const userEmail = user.email;
   const supabase = createClient(cookieStore);
   const { subscription } = await req.json();
-  // Store subscription in a new table 'push_subscriptions' (user_id, subscription JSON)
+  // Store subscription in a new table 'push_subscriptions' (user_email, subscription JSON)
   const { error } = await supabase.from('push_subscriptions').upsert({
-    user_id: userId,
+    user_email: userEmail,
     subscription
-  }, { onConflict: 'user_id' });
+  }, { onConflict: 'user_email' });
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ success: true });
 }
