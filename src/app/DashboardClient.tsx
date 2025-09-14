@@ -55,7 +55,7 @@ export default function DashboardClient({ isFaculty }: DashboardClientProps) {
       return outputArray;
     }
   }, [isFaculty]);
-  const [pdfs, setPdfs] = useState<{ key: string; url: string }[]>([]);
+  const [pdfs, setPdfs] = useState<{ key: string; url: string; name: string }[]>([]);
   const [selectedPdf, setSelectedPdf] = useState<string | null>(null);
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [loadingPdf, setLoadingPdf] = useState(false);
@@ -81,7 +81,8 @@ export default function DashboardClient({ isFaculty }: DashboardClientProps) {
           .map((item) => {
             const key = `pdf/${item.name}`;
             const apiUrl = `/api/pdf/${encodeURIComponent("pdf")}/${encodeURIComponent(item.name)}`;
-            return { key, url: apiUrl };
+            // Add name property for display
+            return { key, url: apiUrl, name: item.name };
           });
         setPdfs(files);
       }
@@ -169,7 +170,7 @@ export default function DashboardClient({ isFaculty }: DashboardClientProps) {
                       }`}
                       onClick={() => handleSelectPdf(pdf.url, pdf.key)}
                     >
-                      {pdf.key.slice(4, pdf.key.length - 4)}
+                      {pdf.name}
                     </button>
                   </li>
                 ))}
