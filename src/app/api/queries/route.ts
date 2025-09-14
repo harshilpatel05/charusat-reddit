@@ -6,102 +6,132 @@ import webpush from "web-push"
 
 // Configure webpush with your VAPID keys
 webpush.setVapidDetails(
-  process.env.NEXT_PUBLIC_PUSH_CONTACT!,
-  process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
-  process.env.PUSH_VAPID_PRIVATE_KEY!
+    process.env.NEXT_PUBLIC_PUSH_CONTACT!,
+    process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
+    process.env.PUSH_VAPID_PRIVATE_KEY!
 )
 
-export async function POST(req: NextRequest) {
-  try {
-    const { question, pdf } = await req.json()
-    console.log("[Queries API] Incoming:", { question, pdf })
-
-    if (!question || !pdf) {
-      return NextResponse.json({ error: "Missing data" }, { status: 400 })
-    }
-
-    // --- Auth ---
-    const cookieStore = await cookies()
-    const token = cookieStore.get("authToken")?.value
-    if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-
-    const secret = process.env.JWT_SECRET
-    if (!secret) return NextResponse.json({ error: "Server misconfigured" }, { status: 500 })
-
-    let user
+export async function GET(req: NextRequest) {
     try {
-      user = jwt.verify(token, secret) as { id: string; email: string }
-      console.log("[Queries API] Authenticated user:", user)
-    } catch (err) {
-      console.error("[Queries API] Invalid token:", err)
-      return NextResponse.json({ error: "Invalid token" }, { status: 401 })
+        const pdf = req.nextUrl.searchParams.get("pdf")
+        if (!pdf) {
+            return NextResponse.json({ error: "Missing pdf param" }, { status: 400 })
+        }
+
+        const supabase = createClient()
+
+        const { data: queries, error } = await supabase
+            .from("queries")
+            .select("id, question, answer, asked_by, pdf_uploaded_by, pdf, created_at")
+            .eq("pdf", pdf)
+            .order("created_at", { ascending: true })
+
+        if (error) {
+            console.error("[Queries API] Fetch error:", error)
+            return NextResponse.json({ error: error.message }, { status: 500 })
+        }
+
+        return NextResponse.json({ queries })
+    } catch (err: unknown) {
+        console.error("[Queries API] Fatal error:", err)
+        if (err instanceof Error) {
+            return NextResponse.json({ error: err.message }, { status: 500 })
+        }
+        return NextResponse.json({ error: "Server error" }, { status: 500 })
     }
+}
 
-    // --- Supabase client ---
-    const supabase = createClient()
+export async function POST(req: NextRequest) {
+    try {
+        const { question, pdf } = await req.json()
+        console.log("[Queries API] Incoming:", { question, pdf })
 
-    // --- Find PDF uploader ---
-    const { data: pdfRow, error: pdfError } = await supabase
-      .from("pdf")
-      .select("uploaded_by")
-      .eq("path", pdf)
-      .single()
+        if (!question || !pdf) {
+            return NextResponse.json({ error: "Missing data" }, { status: 400 })
+        }
 
-    if (pdfError || !pdfRow) {
-      console.error("[Queries API] PDF fetch error:", pdfError)
-      return NextResponse.json({ error: "PDF not found" }, { status: 404 })
+        // --- Auth ---
+        const cookieStore = await cookies()
+        const token = cookieStore.get("authToken")?.value
+        if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+
+        const secret = process.env.JWT_SECRET
+        if (!secret) return NextResponse.json({ error: "Server misconfigured" }, { status: 500 })
+
+        let user
+        try {
+            user = jwt.verify(token, secret) as { id: string; email: string }
+            console.log("[Queries API] Authenticated user:", user)
+        } catch (err) {
+            console.error("[Queries API] Invalid token:", err)
+            return NextResponse.json({ error: "Invalid token" }, { status: 401 })
+        }
+
+        // --- Supabase client ---
+        const supabase = createClient()
+
+        // --- Find PDF uploader ---
+        const { data: pdfRow, error: pdfError } = await supabase
+            .from("pdf")
+            .select("uploaded_by")
+            .eq("path", pdf)
+            .single()
+
+        if (pdfError || !pdfRow) {
+            console.error("[Queries API] PDF fetch error:", pdfError)
+            return NextResponse.json({ error: "PDF not found" }, { status: 404 })
+        }
+
+        // --- Insert query ---
+        const { data: query, error: queryError } = await supabase
+            .from("queries")
+            .insert({
+                question,
+                pdf,
+                asked_by: user.id,
+                pdf_uploaded_by: pdfRow.uploaded_by,
+            })
+            .select()
+            .single()
+
+        if (queryError) {
+            console.error("[Queries API] Query insert error:", queryError)
+            return NextResponse.json({ error: queryError.message }, { status: 500 })
+        }
+
+        // --- Find uploader's push subscription ---
+        const { data: subRow, error: subError } = await supabase
+            .from("push_subscriptions")
+            .select("subscription")
+            .eq("user_id", pdfRow.uploaded_by)
+            .single()
+
+        if (subError) console.error("[Queries API] Subscription fetch error:", subError)
+
+        if (subRow?.subscription) {
+            try {
+                await webpush.sendNotification(
+                    subRow.subscription,
+                    JSON.stringify({
+                        title: "New Query on Your PDF!",
+                        body: question,
+                        url: `/dashboard?pdf=${pdf}`,
+                    })
+                )
+                console.log("[Queries API] Push notification sent")
+            } catch (err) {
+                console.error("[Queries API] Push send failed:", err)
+            }
+        } else {
+            console.log("[Queries API] No subscription found for uploader")
+        }
+
+        return NextResponse.json({ query })
+    } catch (err: unknown) {
+        console.error("[Queries API] Fatal error:", err)
+        if (err instanceof Error) {
+            return NextResponse.json({ error: err.message }, { status: 500 })
+        }
+        return NextResponse.json({ error: "Server error" }, { status: 500 })
     }
-
-    // --- Insert query ---
-    const { data: query, error: queryError } = await supabase
-      .from("queries")
-      .insert({
-        question,
-        pdf,
-        asked_by: user.id,
-        pdf_uploaded_by: pdfRow.uploaded_by,
-      })
-      .select()
-      .single()
-
-    if (queryError) {
-      console.error("[Queries API] Query insert error:", queryError)
-      return NextResponse.json({ error: queryError.message }, { status: 500 })
-    }
-
-    // --- Find uploader's push subscription ---
-    const { data: subRow, error: subError } = await supabase
-      .from("push_subscriptions")
-      .select("subscription")
-      .eq("user_id", pdfRow.uploaded_by)
-      .single()
-
-    if (subError) console.error("[Queries API] Subscription fetch error:", subError)
-
-    if (subRow?.subscription) {
-      try {
-        await webpush.sendNotification(
-          subRow.subscription,
-          JSON.stringify({
-            title: "New Query on Your PDF!",
-            body: question,
-            url: `/dashboard?pdf=${pdf}`,
-          })
-        )
-        console.log("[Queries API] Push notification sent")
-      } catch (err) {
-        console.error("[Queries API] Push send failed:", err)
-      }
-    } else {
-      console.log("[Queries API] No subscription found for uploader")
-    }
-
-    return NextResponse.json({ query })
-  } catch (err: unknown) {
-    console.error("[Queries API] Fatal error:", err)
-    if (err instanceof Error) {
-      return NextResponse.json({ error: err.message }, { status: 500 })
-    }
-    return NextResponse.json({ error: "Server error" }, { status: 500 })
-  }
 }
