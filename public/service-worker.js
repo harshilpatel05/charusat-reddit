@@ -6,7 +6,7 @@ self.addEventListener("push", (event) => {
     body: data.body || "",
     icon: "/favicon.ico",
     badge: "/favicon.ico",
-    data: "/",
+    data: { url: data.url || "/" }, // 👈 proper object with url
   };
   event.waitUntil(self.registration.showNotification(title, options));
 });
@@ -14,9 +14,22 @@ self.addEventListener("push", (event) => {
 // ✅ Notification Click handler
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  if (event.notification.data && event.notification.data.url) {
-    event.waitUntil(clients.openWindow(event.notification.data.url));
-  }
+  const urlToOpen = event.notification.data?.url || "/";
+
+  event.waitUntil(
+    clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
+      // focus if already open
+      for (const client of clientList) {
+        if (client.url.includes(urlToOpen) && "focus" in client) {
+          return client.focus();
+        }
+      }
+      // otherwise open new tab
+      if (clients.openWindow) {
+        return clients.openWindow(urlToOpen);
+      }
+    })
+  );
 });
 
 // ✅ Fetch handler (safe for APIs)
