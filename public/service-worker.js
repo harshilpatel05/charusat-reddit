@@ -6,7 +6,7 @@ self.addEventListener("push", (event) => {
     body: data.body || "",
     icon: "/favicon.ico",
     badge: "/favicon.ico",
-    data: { url: data.url || "/" }, // 👈 proper object with url
+    data: { url: "/" }, // 👈 proper object with url
   };
   event.waitUntil(self.registration.showNotification(title, options));
 });
